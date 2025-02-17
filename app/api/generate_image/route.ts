@@ -8,26 +8,30 @@ export const runtime = 'edge'
 
 export async function POST(request: NextRequest) {
   try {
-    const context = getRequestContext()
-    const { AI, BUCKET } = context.env
-    let { prompt, model } = await request.json<{ prompt: string, model: string }>()
-    if (!model) model = "@cf/black-forest-labs/flux-1-schnell"
+    const context = getRequestContext();
+    const { AI, BUCKET } = context.env;
+    // 这里只传入了两个参数的其他的参数全都舍弃了
+    let { prompt, model } = await request.json<{
+      prompt: string;
+      model: string;
+    }>();
+    if (!model) model = "@cf/black-forest-labs/flux-1-schnell";
 
-    const inputs = { prompt }
-    const response = await AI.run(model, inputs)
+    const inputs = { prompt };
+    const response = await AI.run(model, inputs);
 
-    const promptKey = encodeURIComponent(prompt.replace(/\s/g, '-'))
+    const promptKey = encodeURIComponent(prompt.replace(/\s/g, "-"));
     const binaryString = atob(response.image);
 
     // @ts-ignore
     const img = Uint8Array.from(binaryString, (m) => m.codePointAt(0));
-    await BUCKET.put(`${promptKey}.jpeg`, img)
+    await BUCKET.put(`${promptKey}.jpeg`, img);
 
     return new Response(`data:image/jpeg;base64,${response.image}`, {
       headers: {
-        'Content-Type': 'image/jpeg',
+        "Content-Type": "image/jpeg",
       },
-    })
+    });
   } catch (error: any) {
     console.log(error)
     return new Response(error.message, { status: 500 })
